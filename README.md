@@ -5,3 +5,5 @@ Este repositório contêm ARM Templates, scripts Powershell e Bash para implanta
 
 ### English
 This repository contains ARM Templates, Powershell and Bash scripts to deploy resources in Microsoft Azure.
+
+Testing a new branch called feature
