@@ -197,7 +197,8 @@
             ],
             "tags": {
                 "environment": "dev",
-                "location": "northcentralus"
+                "location": "northcentralus",
+                "VM": "Virtual Machine"
             },
             "properties": {
                 "hardwareProfile": {
