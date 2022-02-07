@@ -2,6 +2,19 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "Administrador": {
+            "type": "String",
+            "metadata": {
+                "description": "Nome de usuario"
+            }
+        },
+        "Senha": {
+            "minLength": 12,
+            "type": "SecureString",
+            "metadata": {
+                "description": "Senha do usuario"
+            }
+        },
         "virtualMachines_ncus_dev_vm1_name": {
             "defaultValue": "ncus-dev-vm1",
             "type": "String"
@@ -18,7 +31,7 @@
             "defaultValue": "ncus-dev-vnet",
             "type": "String"
         },
-        "networkInterfaces_ncus_dev_vm1": {
+        "networkInterfaces_ncus_dev_nic_vm1": {
             "defaultValue": "ncus-dev-nic-vm1",
             "type": "String"
         },
@@ -26,14 +39,8 @@
             "defaultValue": "ncus-dev-nic-vm2",
             "type": "String"
         },
-        "networkSecurityGroups_ncus_dev_vm1_nsg_name": {
+        "networkSecurityGroups_ncus_dev_nsg": {
             "defaultValue": "ncus-dev-nsg",
-            "type": "String"
-        },
-        "disks_ncus_dev_vm1_OsDisk": {
-            "type": "String"
-        },
-        "disks_ncus_dev_vm2_OsDisk": {
             "type": "String"
         }
     },
@@ -42,16 +49,13 @@
         {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-11-01",
-            "name": "[parameters('networkSecurityGroups_ncus_dev_vm1_nsg_name')]",
+            "name": "[parameters('networkSecurityGroups_ncus_dev_nsg')]",
             "location": "northcentralus",
             "tags": {
                 "location": "northcentralus",
-                "environment": "dev",
-                "network": "firewall"
+                "environment": "dev"
             },
-            "properties": {
-                
-            }
+            "properties": {}
         },
         {
             "type": "Microsoft.Network/publicIPAddresses",
@@ -77,8 +81,7 @@
             "location": "northcentralus",
             "tags": {
                 "location": "northcentralus",
-                "environment": "dev",
-                "network": "VNet"
+                "environment": "dev"
             },
             "properties": {
                 "addressSpace": {
@@ -107,7 +110,7 @@
             "name": "[parameters('virtualMachines_ncus_dev_vm1_name')]",
             "location": "northcentralus",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ncus_dev_vm1'))]"
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ncus_dev_nic_vm1'))]"
             ],
             "tags": {
                 "location": "northcentralus",
@@ -126,12 +129,11 @@
                     },
                     "osDisk": {
                         "osType": "Windows",
-                        "name": "(parameters('virtualMachines_ncus_dev_vm1_name')",
+                        "name": "[concat(parameters('virtualMachines_ncus_dev_vm1_name'), 'OS_disk')]",
                         "createOption": "FromImage",
                         "caching": "ReadWrite",
                         "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS",
-                            "id": "[parameters('disks_ncus_dev_vm1_OsDisk')]"
+                            "storageAccountType": "StandardSSD_LRS"
                         },
                         "deleteOption": "Delete",
                         "diskSizeGB": 127
@@ -140,7 +142,8 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('virtualMachines_ncus_dev_vm1_name')]",
-                    "adminUsername": "leandro",
+                    "adminUsername": "[parameters('Administrador')]",
+                    "adminPassword": "[parameters('Senha')]",
                     "windowsConfiguration": {
                         "provisionVMAgent": true,
                         "enableAutomaticUpdates": true,
@@ -151,13 +154,12 @@
                         }
                     },
                     "secrets": [],
-                    "allowExtensionOperations": true,
-                    "requireGuestProvisionSignal": true
+                    "allowExtensionOperations": true
                 },
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ncus_dev_vm1'))]",
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ncus_dev_nic_vm1'))]",
                             "properties": {
                                 "deleteOption": "Delete"
                             }
@@ -168,22 +170,24 @@
                     "bootDiagnostics": {
                         "enabled": true
                     }
-                },
-                "type": "Microsoft.Compute/virtualMachines/extensions",
-                "apiVersion": "2021-04-01",
-                "name": "[parameters('virtualMachines_ncus_dev_vm1_name')]",
-                "location": "northcentralus",
-                "dependsOn": [
-                    "[parameters('virtualMachines_ncus_dev_vm1_name')]"
-                ],
-                "properties": {
-                    "publisher": "Microsoft.Compute",
-                    "type": "CustomScriptExtension",
-                    "typeHandlerVersion": "1.7",
-                    "autoUpgradeMinorVersion": true,
-                    "settings": {
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('virtualMachines_ncus_dev_vm1_name'),'/', 'InstallWebServer')]",
+            "location": "northcentralus",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/',parameters('virtualMachines_ncus_dev_vm1_name'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.7",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
                     "commandToExecute": "powershell.exe Install-WindowsFeature -name Web-Server -IncludeManagementTools && powershell.exe remove-item 'C:\\inetpub\\wwwroot\\iisstart.htm' && powershell.exe Add-Content -Path 'C:\\inetpub\\wwwroot\\iisstart.htm' -Value $('Hello World from ' + $env:computername)"
-                    }
                 }
             }
         },
@@ -197,8 +201,7 @@
             ],
             "tags": {
                 "environment": "dev",
-                "location": "northcentralus",
-                "VM": "Virtual Machine"
+                "location": "northcentralus"
             },
             "properties": {
                 "hardwareProfile": {
@@ -213,12 +216,11 @@
                     },
                     "osDisk": {
                         "osType": "Windows",
-                        "name": "parameters('virtualMachines_ncus_dev_vm2_name')",
+                        "name": "[concat(parameters('virtualMachines_ncus_dev_vm2_name'), 'OS_disk')]",
                         "createOption": "FromImage",
                         "caching": "ReadWrite",
                         "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS",
-                            "id": "[parameters('disks_ncus_dev_vm2_OsDisk')]"
+                            "storageAccountType": "StandardSSD_LRS"
                         },
                         "deleteOption": "Delete",
                         "diskSizeGB": 127
@@ -227,7 +229,8 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('virtualMachines_ncus_dev_vm2_name')]",
-                    "adminUsername": "leandro",
+                    "adminUsername": "[parameters('Administrador')]",
+                    "adminPassword": "[parameters('Senha')]",
                     "windowsConfiguration": {
                         "provisionVMAgent": true,
                         "enableAutomaticUpdates": true,
@@ -238,8 +241,7 @@
                         }
                     },
                     "secrets": [],
-                    "allowExtensionOperations": true,
-                    "requireGuestProvisionSignal": true
+                    "allowExtensionOperations": true
                 },
                 "networkProfile": {
                     "networkInterfaces": [
@@ -255,22 +257,24 @@
                     "bootDiagnostics": {
                         "enabled": true
                     }
-                },
-                "type": "Microsoft.Compute/virtualMachines/extensions",
-                "apiVersion": "2021-04-01",
-                "name": "[parameters('virtualMachines_ncus_dev_vm1_name')]",
-                "location": "northcentralus",
-                "dependsOn": [
-                    "[parameters('virtualMachines_ncus_dev_vm1_name')]"
-                ],
-                "properties": {
-                    "publisher": "Microsoft.Compute",
-                    "type": "CustomScriptExtension",
-                    "typeHandlerVersion": "1.7",
-                    "autoUpgradeMinorVersion": true,
-                    "settings": {
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('virtualMachines_ncus_dev_vm2_name'),'/', 'InstallWebServer')]",
+            "location": "northcentralus",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/',parameters('virtualMachines_ncus_dev_vm2_name'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.7",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
                     "commandToExecute": "powershell.exe Install-WindowsFeature -name Web-Server -IncludeManagementTools && powershell.exe remove-item 'C:\\inetpub\\wwwroot\\iisstart.htm' && powershell.exe Add-Content -Path 'C:\\inetpub\\wwwroot\\iisstart.htm' -Value $('Hello World from ' + $env:computername)"
-                    }
                 }
             }
         },
@@ -308,17 +312,6 @@
             }
         },
         {
-            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-            "apiVersion": "2020-11-01",
-            "name": "[concat(parameters('networkSecurityGroups_ncus_dev_vm1_nsg_name'), '/default-allow-rdp')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ncus_dev_vm1_nsg_name'))]"
-            ],
-            "properties": {
-
-            }
-        },
-        {
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2020-11-01",
             "name": "[concat(parameters('virtualNetworks_ncus_dev_vnet_name'), '/vm')]",
@@ -335,11 +328,11 @@
         {
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2020-11-01",
-            "name": "[parameters('networkInterfaces_ncus_dev_vm1')]",
+            "name": "[parameters('networkInterfaces_ncus_dev_nic_vm1')]",
             "location": "northcentralus",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_ncus_dev_vnet_name'), 'vm')]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ncus_dev_vm1_nsg_name'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ncus_dev_nsg'))]"
             ],
             "tags": {
                 "location": "northcentralus",
@@ -365,7 +358,7 @@
                 },
                 "enableIPForwarding": false,
                 "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ncus_dev_vm1_nsg_name'))]"
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ncus_dev_nsg'))]"
                 }
             }
         }
