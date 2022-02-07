@@ -229,7 +229,7 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('virtualMachines_ncus_dev_vm2_name')]",
-                    "adminUsername": "[parameters('Administrador')]",
+                    "adminUsername": "[parameters('Usuario')]",
                     "adminPassword": "[parameters('Senha')]",
                     "windowsConfiguration": {
                         "provisionVMAgent": true,
