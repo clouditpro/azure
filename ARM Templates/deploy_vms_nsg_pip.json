@@ -2,7 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "Administrador": {
+        "Usuario": {
             "type": "String",
             "metadata": {
                 "description": "Nome de usuario"
@@ -142,7 +142,7 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('virtualMachines_ncus_dev_vm1_name')]",
-                    "adminUsername": "[parameters('Administrador')]",
+                    "adminUsername": "[parameters('Usuario')]",
                     "adminPassword": "[parameters('Senha')]",
                     "windowsConfiguration": {
                         "provisionVMAgent": true,
