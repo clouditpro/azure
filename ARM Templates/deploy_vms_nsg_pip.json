@@ -308,7 +308,10 @@
                 "dnsSettings": {
                     "dnsServers": []
                 },
-                "enableIPForwarding": false
+                "enableIPForwarding": false,
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ncus_dev_nsg'))]"
+                }
             }
         },
         {
