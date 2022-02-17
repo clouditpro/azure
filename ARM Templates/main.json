@@ -38,7 +38,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "https://github.com/clouditpro/azure/blob/main/ARM%20Templates/nested.json"
+          "uri": "https://raw.githubusercontent.com/clouditpro/azure/main/ARM%20Templates/main.json"
         },
         "parameters": {
           "storageAccountName": {
